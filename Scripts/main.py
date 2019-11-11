@@ -1,6 +1,8 @@
 import os
 import time
+import math
 
+import numpy as np
 import pybullet
 import pybullet_data
 
@@ -20,9 +22,13 @@ class ScriptManager(Singleton):
         self.scene_manager = None
         self.viewport_manager = None
         self.main_viewport = None
-        self.sphere = None
-        self.suzan = None
-        self.skeletal = None
+        self.actor_plane = None
+        self.actor_spheres = []
+        self.actor_suzans = []
+        self.physics_client = None
+        self.physics_plane = None
+        self.physics_suzans = []
+        self.physics_spheres = []
 
     def initialize(self, core_manager):
         logger.info("ScriptManager::initialize")
@@ -36,50 +42,98 @@ class ScriptManager(Singleton):
         self.viewport_manager = core_manager.viewport_manager
         self.main_viewport = core_manager.viewport_manager.main_viewport
 
-        self.scene_manager.clear_actors()
+        self.resource_manager.open_scene('physics_scene')
 
         camera_transform = self.scene_manager.main_camera.transform
-        camera_transform.set_pos([4.5, 4.5, 6.8])
-        camera_transform.set_pitch(5.92)
+        camera_transform.set_pos([12.5, 12.5, 13.8])
+        camera_transform.set_pitch(5.62)
         camera_transform.set_yaw(0.67)
 
-        self.sphere = self.resource_manager.get_model("sphere")
-        self.scene_manager.add_object(model=self.sphere, pos=[2.0, 1.0, 0.5])
+        model_plane = self.resource_manager.get_model("Cube")
+        model_sphere = self.resource_manager.get_model("sphere")
+        model_suzan = self.resource_manager.get_model("suzan")
+        mesh_count = 10
 
-        self.suzan = self.resource_manager.get_model("suzan")
-        self.scene_manager.add_object(model=self.suzan, pos=[-1.0, 0.5, 2.0])
+        self.actor_plane = self.scene_manager.add_object(model=model_plane, pos=[0.0, 0.0, 0.0], scale=[15.0, 0.01, 15.0])
 
-        physicsClient = pybullet.connect(pybullet.GUI)  # or p.DIRECT for non-graphical version
-        pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())  # optionally
-        pybullet.setGravity(0, 0, -10)
-        planeId = pybullet.loadURDF(self.resource_manager.get_file_path("Externals/Physics/plane.urdf"))
-        cubeStartPos = [0, 0, 1]
-        cubeStartOrientation = pybullet.getQuaternionFromEuler([0, 0, 0])
-        boxId = pybullet.loadURDF(self.resource_manager.get_file_path("Externals/Physics/suzan.urdf"), cubeStartPos, cubeStartOrientation)
-        for i in range(10000):
-            pybullet.stepSimulation()
-            time.sleep(1. / 240.)
-        cubePos, cubeOrn = pybullet.getBasePositionAndOrientation(boxId)
-        print(cubePos, cubeOrn)
-        pybullet.disconnect()
+        def get_random_pos():
+            pos = np.random.rand(3)
+            pos[0] = pos[0] * 2.0 - 1.0
+            pos[1] += np.random.rand() * 6.0
+            pos[2] = pos[2] * 2.0 - 1.0
+            return pos * 2.0
 
-        if not self.core_manager.is_basic_mode:
-            self.skeletal = self.resource_manager.get_model("skeletal")
-            self.scene_manager.add_object(model=self.skeletal, pos=[2.0, 1.0, 3.0], scale=[0.01, 0.01, 0.01])
+        for i in range(mesh_count):
+            actor_sphere = self.scene_manager.add_object(model=model_sphere, pos=get_random_pos(), scale=Float3(0.5, 0.5, 0.5))
+            actor_suzan = self.scene_manager.add_object(model=model_suzan, pos=get_random_pos(), scale=Float3(0.5, 0.5, 0.5))
+            self.actor_spheres.append(actor_sphere)
+            self.actor_suzans.append(actor_suzan)
+
+        self.initialize_physics()
+
+    def initialize_physics(self):
+        self.physics_client = pybullet.connect(pybullet.DIRECT)
+        pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())
+        pybullet.setAdditionalSearchPath(self.resource_manager.project_path)
+        pybullet.setGravity(0, -98, 0)
+
+        self.physics_plane = pybullet.loadURDF(
+            "Externals/Physics/plane.urdf",
+            self.actor_plane.transform.get_pos(),
+            pybullet.getQuaternionFromEuler([0.0, 3.141592 * 0.5, 3.141592 * 0.5])
+        )
+
+        for actor_sphere in self.actor_spheres:
+            physics_sphere = pybullet.loadURDF(
+                "Externals/Physics/sphere.urdf",
+                actor_sphere.transform.get_pos(),
+                pybullet.getQuaternionFromEuler(actor_sphere.transform.get_rotation())
+            )
+            self.physics_spheres.append(physics_sphere)
+
+        for actor_suzan in self.actor_suzans:
+            physics_suzan = pybullet.loadURDF(
+                "Externals/Physics/suzan.urdf",
+                actor_suzan.transform.get_pos(),
+                pybullet.getQuaternionFromEuler(actor_suzan.transform.get_rotation())
+            )
+            self.physics_suzans.append(physics_suzan)
 
     def exit(self):
         logger.info("ScriptManager::exit")
-        if self.sphere is not None:
-            self.scene_manager.delete_object(self.sphere.name)
-            self.sphere = None
 
-        if self.suzan is not None:
-            self.scene_manager.delete_object(self.suzan.name)
-            self.suzan = None
+        pybullet.disconnect()
 
-        if self.skeletal is not None:
-            self.scene_manager.delete_object(self.skeletal.name)
-            self.skeletal = None
+        for actor_sphere in self.actor_spheres:
+            self.scene_manager.delete_object(actor_sphere.name)
+        self.actor_spheres = []
+
+        for actor_suzan in self.actor_suzans:
+            self.scene_manager.delete_object(actor_suzan.name)
+        self.actor_suzans = []
+
+        if self.actor_plane is not None:
+            self.scene_manager.delete_object(self.actor_plane.name)
+            self.actor_plane = None
+
+    def update(self, delta):
+        pybullet.stepSimulation()
+
+        self.update_camera(delta)
+
+        for i, actor_suzan in enumerate(self.actor_suzans):
+            position, rotation = pybullet.getBasePositionAndOrientation(self.physics_suzans[i])
+            actor_suzan.transform.set_pos(position)
+            actor_suzan.transform.set_rotation(pybullet.getEulerFromQuaternion(rotation))
+
+        for i, actor_sphere in enumerate(self.actor_spheres):
+            position, rotation = pybullet.getBasePositionAndOrientation(self.physics_spheres[i])
+            actor_sphere.transform.set_pos(position)
+            actor_sphere.transform.set_rotation(pybullet.getEulerFromQuaternion(rotation))
+
+        self.debug_line_manager.draw_debug_line_3d(Float3(0.0, 0.0, 0.0), Float3(3.0, 0.0, 0.0), Float4(1.0, 0.0, 0.0, 1.0), width=3.0)
+        self.debug_line_manager.draw_debug_line_3d(Float3(0.0, 0.0, 0.0), Float3(0.0, 3.0, 0.0), Float4(0.0, 1.0, 0.0, 1.0), width=3.0)
+        self.debug_line_manager.draw_debug_line_3d(Float3(0.0, 0.0, 0.0), Float3(0.0, 0.0, 3.0), Float4(0.0, 0.0, 1.0, 1.0), width=3.0)
 
     def update_camera(self, delta):
         keydown = self.game_backend.get_keyboard_pressed()
@@ -131,11 +185,4 @@ class ScriptManager(Singleton):
 
         if keydown[Keyboard.SPACE]:
             camera_transform.reset_transform()
-
-    def update(self, delta):
-        self.update_camera(delta)
-
-        self.debug_line_manager.draw_debug_line_3d(Float3(0.0, 0.0, 0.0), Float3(3.0, 0.0, 0.0), Float4(1.0, 0.0, 0.0, 1.0), width=3.0)
-        self.debug_line_manager.draw_debug_line_3d(Float3(0.0, 0.0, 0.0), Float3(0.0, 3.0, 0.0), Float4(0.0, 1.0, 0.0, 1.0), width=3.0)
-        self.debug_line_manager.draw_debug_line_3d(Float3(0.0, 0.0, 0.0), Float3(0.0, 0.0, 3.0), Float4(0.0, 0.0, 1.0, 1.0), width=3.0)
 
