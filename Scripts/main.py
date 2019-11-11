@@ -1,3 +1,9 @@
+import os
+import time
+
+import pybullet
+import pybullet_data
+
 from PyEngine3D.Common import logger
 from PyEngine3D.Utilities import Singleton, Float3, Float4
 from PyEngine3D.App.GameBackend import Keyboard
@@ -42,6 +48,20 @@ class ScriptManager(Singleton):
 
         self.suzan = self.resource_manager.get_model("suzan")
         self.scene_manager.add_object(model=self.suzan, pos=[-1.0, 0.5, 2.0])
+
+        physicsClient = pybullet.connect(pybullet.GUI)  # or p.DIRECT for non-graphical version
+        pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())  # optionally
+        pybullet.setGravity(0, 0, -10)
+        planeId = pybullet.loadURDF(self.resource_manager.get_file_path("Externals/Physics/plane.urdf"))
+        cubeStartPos = [0, 0, 1]
+        cubeStartOrientation = pybullet.getQuaternionFromEuler([0, 0, 0])
+        boxId = pybullet.loadURDF(self.resource_manager.get_file_path("Externals/Physics/suzan.urdf"), cubeStartPos, cubeStartOrientation)
+        for i in range(10000):
+            pybullet.stepSimulation()
+            time.sleep(1. / 240.)
+        cubePos, cubeOrn = pybullet.getBasePositionAndOrientation(boxId)
+        print(cubePos, cubeOrn)
+        pybullet.disconnect()
 
         if not self.core_manager.is_basic_mode:
             self.skeletal = self.resource_manager.get_model("skeletal")
