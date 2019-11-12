@@ -11,6 +11,10 @@ from PyEngine3D.Utilities import Singleton, Float3, Float4
 from PyEngine3D.App.GameBackend import Keyboard
 
 
+def change(x):
+    return [-x[0], x[2], x[1]]
+
+
 class ScriptManager(Singleton):
     def __init__(self):
         logger.info("ScriptManager::__init__")
@@ -54,7 +58,7 @@ class ScriptManager(Singleton):
         model_suzan = self.resource_manager.get_model("suzan")
         mesh_count = 10
 
-        self.actor_plane = self.scene_manager.add_object(model=model_plane, pos=[0.0, 0.0, 0.0], scale=[15.0, 0.01, 15.0])
+        self.actor_plane = self.scene_manager.add_object(model=model_plane, pos=[10.0, 0.0, 0.0], scale=[15.0, 0.01, 15.0])
 
         def get_random_pos():
             pos = np.random.rand(3)
@@ -75,27 +79,24 @@ class ScriptManager(Singleton):
         self.physics_client = pybullet.connect(pybullet.DIRECT)
         pybullet.setAdditionalSearchPath(pybullet_data.getDataPath())
         pybullet.setAdditionalSearchPath(self.resource_manager.project_path)
-        pybullet.setGravity(0, -98, 0)
+        pybullet.setGravity(-10, 0, -98)
 
         self.physics_plane = pybullet.loadURDF(
             "Externals/Physics/plane.urdf",
-            self.actor_plane.transform.get_pos(),
-            pybullet.getQuaternionFromEuler([0.0, 3.141592 * 0.5, 3.141592 * 0.5])
+            change(self.actor_plane.transform.get_pos())
         )
 
         for actor_sphere in self.actor_spheres:
             physics_sphere = pybullet.loadURDF(
                 "Externals/Physics/sphere.urdf",
-                actor_sphere.transform.get_pos(),
-                pybullet.getQuaternionFromEuler(actor_sphere.transform.get_rotation())
+                change(actor_sphere.transform.get_pos())
             )
             self.physics_spheres.append(physics_sphere)
 
         for actor_suzan in self.actor_suzans:
             physics_suzan = pybullet.loadURDF(
                 "Externals/Physics/suzan.urdf",
-                actor_suzan.transform.get_pos(),
-                pybullet.getQuaternionFromEuler(actor_suzan.transform.get_rotation())
+                change(actor_suzan.transform.get_pos())
             )
             self.physics_suzans.append(physics_suzan)
 
@@ -123,13 +124,13 @@ class ScriptManager(Singleton):
 
         for i, actor_suzan in enumerate(self.actor_suzans):
             position, rotation = pybullet.getBasePositionAndOrientation(self.physics_suzans[i])
-            actor_suzan.transform.set_pos(position)
-            actor_suzan.transform.set_rotation(pybullet.getEulerFromQuaternion(rotation))
+            actor_suzan.transform.set_pos(change(position))
+            actor_suzan.transform.set_rotation(change(pybullet.getEulerFromQuaternion(rotation)))
 
         for i, actor_sphere in enumerate(self.actor_spheres):
             position, rotation = pybullet.getBasePositionAndOrientation(self.physics_spheres[i])
-            actor_sphere.transform.set_pos(position)
-            actor_sphere.transform.set_rotation(pybullet.getEulerFromQuaternion(rotation))
+            actor_sphere.transform.set_pos(change(position))
+            actor_sphere.transform.set_rotation(change(pybullet.getEulerFromQuaternion(rotation)))
 
         self.debug_line_manager.draw_debug_line_3d(Float3(0.0, 0.0, 0.0), Float3(3.0, 0.0, 0.0), Float4(1.0, 0.0, 0.0, 1.0), width=3.0)
         self.debug_line_manager.draw_debug_line_3d(Float3(0.0, 0.0, 0.0), Float3(0.0, 3.0, 0.0), Float4(0.0, 1.0, 0.0, 1.0), width=3.0)
