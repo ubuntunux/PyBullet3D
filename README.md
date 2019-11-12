@@ -18,10 +18,10 @@ PyEngine3D + PyBullet3
 
 ### Installation & Run PyBullet3D Project
 ```    
-    git clone https://github.com/ubuntunux/PyBullet3D
-    cd PyEngine3D
-    python main.py
-    Menu -> Open Project -> Choose "PyBullet3D.project" file in PyBullet3D directory.
-    Then restarts application.
-    Click "Play" button.
+  git clone https://github.com/ubuntunux/PyBullet3D
+  cd PyEngine3D
+  python main.py
+  Menu -> Open Project -> Choose "PyBullet3D.project" file in PyBullet3D directory.
+  Then restarts application.
+  Click "Play" button.
 ```
