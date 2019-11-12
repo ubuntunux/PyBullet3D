@@ -4,7 +4,7 @@ PyEngine3D + PyBullet3
 
 ### Requirments
     - PyEngine3D : https://github.com/ubuntunux/PyEngine3D
-    - PyBullet3 : https://github.com/bulletphysics/bullet3
+    - pybullet : https://github.com/bulletphysics/bullet3
     
 
 ### Installation Requirments
