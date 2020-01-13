@@ -1,7 +1,7 @@
 # PyBullet3D
 PyEngine3D + PyBullet3
 
-* Video : https://www.youtube.com/watch?v=Lpuxi2O5fiA
+* Features : https://www.youtube.com/watch?v=Lpuxi2O5fiA
 
 ### Requirments
     - PyEngine3D : https://github.com/ubuntunux/PyEngine3D
