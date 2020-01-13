@@ -25,9 +25,9 @@ python main.py
 
 ### Step3) Load PyBullet3D Project
 ```
-  Menu -> Open Project -> Choose "PyBullet3D.project" file in PyBullet3D directory.
-  Then restarts application.
-  Select "Resource List" tab.
-  Double click the "physic_scene" or Right click then select Load menu.
-  Click "Play" button.
+1) Menu -> Open Project -> Choose "PyBullet3D.project" file in PyBullet3D directory.
+2) Then it will restarts application.
+3) Select "Resource List" tab.
+4) Double click the "physic_scene" or Right click then select Load menu.
+5) Click "Play" button.
 ```
